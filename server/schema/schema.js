@@ -1,41 +1,49 @@
 const graphql = require('graphql');
-const _=require('lodash');
+const _ = require('lodash');
 
-const movies = [
-    {
-        id: '1',
-        title: 'The Godfather',
-        description: 'The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.',
-        year: 1972
-    },
-    {
-        id: '2',
-        title: 'Scarface',
-        description: 'In Miami in 1980, a determined Cuban immigrant takes over a drug cartel and succumbs to greed.',
-        year: 1980
-    },
-    {
-        id: '3',
-        title: 'Pulp Fiction',
-        description: 'The lives of two mob hitmen, a boxer, a gangster\'s wife, and a pair of diner bandits intertwine in four tales of violence and redemption.',
-        year: 1994
-    }
-];
+//MongoDB Models
+const Movie = require('../models/Movie');
+const Director = require('../models/Director');
 
 const {
     GraphQLSchema,
     GraphQLObjectType,
+    GraphQLID,
     GraphQLString,
-    GraphQLInt
+    GraphQLInt,
+    GraphQLList,
+    GraphQLNonNull
 } = graphql;
 
 const MovieType = new GraphQLObjectType({
     name: 'Movie',
     fields: () => ({
-        id: {type: GraphQLString},
+        id: {type: GraphQLID},
         title: {type: GraphQLString},
         description: {type: GraphQLString},
-        year: {type: GraphQLInt}
+        year: {type: GraphQLInt},
+        director: {
+            type: DirectorType,
+            resolve(parent, args) {
+                return Director.findById(parent.directorId)
+            }
+        }
+    })
+})
+
+const DirectorType = new GraphQLObjectType({
+    name: 'Director',
+    fields: () => ({
+        id: {type: GraphQLID},
+        name: {type: GraphQLString},
+        birth: {type: GraphQLInt},
+        movies: {
+            type: GraphQLList(MovieType),
+            resolve(parent, args) {
+                return Movie.find({directorId: parent.id})
+            }
+
+        }
     })
 })
 
@@ -44,14 +52,72 @@ const RootQuery = new GraphQLObjectType({
     fields: {
         movie: {
             type: MovieType,
-            args: {id: {type: GraphQLString}},
+            args: {id: {type: GraphQLID}},
             resolve(parent, args) {
-                return _.find(movies,{id:args.id})
+                return Movie.findById(args.id)
+            }
+        },
+        director: {
+            type: DirectorType,
+            args: {id: {type: GraphQLID}},
+            resolve(parent, args) {
+                return Director.findById(args.id)
+            }
+        },
+        movies: {
+            type: GraphQLList(MovieType),
+            resolve(parent, args) {
+                return Movie.find({})
+            }
+        },
+        directors: {
+            type: GraphQLList(DirectorType),
+            resolve(parent, args) {
+                return Director.find({})
+            }
+        }
+    }
+})
+
+const Mutation = new GraphQLObjectType({
+    name: 'Mutation',
+    fields: {
+        addMovie: {
+            type: MovieType,
+            args: {
+                title: {type: GraphQLNonNull(GraphQLString)},
+                description: {type: GraphQLString},
+                year: {type: GraphQLInt},
+                directorId: {type: GraphQLString}
+            },
+            resolve(parent, args) {
+                const movie = new Movie({
+                    title: args.title,
+                    description: args.description,
+                    year: args.year,
+                    directorId: args.directorId
+                })
+                return movie.save().catch(err => console.log(err))
+            }
+        },
+        addDirector: {
+            type: DirectorType,
+            args: {
+                name: {type: GraphQLNonNull(GraphQLString)},
+                birth: {type: GraphQLInt}
+            },
+            resolve(parent, args) {
+                const director = new Director({
+                    name: args.name,
+                    birth: args.birth
+                })
+                return director.save().catch(err => console.log(err))
             }
         }
     }
 })
 
 module.exports = new GraphQLSchema({
-    query: RootQuery
+    query: RootQuery,
+    mutation: Mutation
 })
