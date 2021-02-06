@@ -36,8 +36,12 @@ const MovieList = () => {
     return (
         <div className={'container'} data-state="Movie App">
 
-            <Modal title={currentMovie.title} visible={visible} onOk={() => setVisible(false)} onCancel={() => setVisible(false)}>
+            <Modal title={'Detail'} visible={visible} onOk={() => setVisible(false)} onCancel={() => setVisible(false)}>
+                <h4>{currentMovie.title}</h4>
+                <p>{currentMovie.year} </p>
+                <br/>
                 <p>{currentMovie.description}</p>
+                <br/>
             </Modal>
 
             <div className="device" data-view="list">
