@@ -1,27 +1,34 @@
 import React from "react";
-import {gql, useQuery} from "@apollo/client";
+import {useQuery} from "@apollo/client";
+//queries
+import {GET_MOVIES} from '../queries/queries';
 
-const GET_MOVIES = gql`
-    {
-        movies{
-            title,
-            description,
-            year
-        }
-    }
-`
 
 const MovieList = () => {
     const {loading, error, data} = useQuery(GET_MOVIES);
-    if (data) console.log(data)
+    const listMovie = () => {
+        if (loading)
+            return <div>Loading...</div>
+        else if (error)
+            return <div>{error}</div>
+        else
+            return data.movies.map((movie: { title: string; id: string,description:string }) => {
+                return (<li key={movie.id} className="content">
+                    <div className="bg"/>
+                    <div className="avatar"/>
+                    <div className="title">{movie.title}</div>
+                    <p>{movie.description}</p>
+                </li>)
+            })
+    }
     return (
-        <>
-            <ul className={'movieList'}>
-                <li>
-                    Lorem İpsum
-                </li>
-            </ul>
-        </>
+        <div className={'container'} data-state="Movie App">
+            <div className="device" data-view="list">
+                <ul className="layer" data-layer="list">
+                    {listMovie()}
+                </ul>
+            </div>
+        </div>
     )
 }
 
